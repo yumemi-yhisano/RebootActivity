@@ -1,7 +1,9 @@
 package com.sample.rebootactivity;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Handler;
@@ -29,6 +31,7 @@ public class MainControlService extends Service {
     private Messenger mMessenger;
     private Messenger mReplayMessenger;
     private boolean mConnected;
+    private BroadcastReceiver mReceiver = new ScreenEventReceiver();
 
     @Override
     public void onCreate() {
@@ -39,12 +42,19 @@ public class MainControlService extends Service {
         configureView();
         configureStartButton(! mConnected);
         configureCloseActivityButton(mConnected);
+
+        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        registerReceiver(mReceiver, filter);
+
     }
 
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
         getWindowManager().removeView(mView);
+        unregisterReceiver(mReceiver);
+
         super.onDestroy();
     }
 

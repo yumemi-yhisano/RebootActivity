@@ -30,8 +30,8 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         super.onStart();
         Intent intent = new Intent(this, MainControlService.class);
         bindService(intent, this, BIND_AUTO_CREATE);
-        intent = new Intent(this, MainControlService.class);
-        startService(intent);
+//        intent = new Intent(this, MainControlService.class);
+//        startService(intent);
         mReplayMessenger = new Messenger(new Handler(this.getMainLooper(), new ReplayCallback()));
     }
 
