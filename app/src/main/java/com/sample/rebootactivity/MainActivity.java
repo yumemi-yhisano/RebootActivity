@@ -1,6 +1,7 @@
 package com.sample.rebootactivity;
 
 import android.app.usage.UsageStats;
+import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -50,8 +51,12 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         view.findViewById(R.id.goto_setting_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-                startActivity(intent);
+                try {
+                    Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+                    startActivity(intent);
+                } catch (ActivityNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }

@@ -54,7 +54,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="#454545"
-        android:foreground="@drawable/ripple_drawable_button">
+        android:foreground="@drawable/button_effect">
 
         <TextView
             android:layout_width="wrap_content"

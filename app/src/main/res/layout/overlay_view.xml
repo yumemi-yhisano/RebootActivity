@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
         android:background="#FF0000"
-        android:foreground="@drawable/ripple_drawable_button">
+        android:foreground="@drawable/button_effect">
 
         <TextView
             android:layout_width="match_parent"
@@ -32,7 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="10dp"
         android:background="#FF0000"
-        android:foreground="@drawable/ripple_drawable_button">
+        android:foreground="@drawable/button_effect">
 
         <TextView
             android:layout_width="match_parent"
@@ -48,7 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FF0000"
-        android:foreground="@drawable/ripple_drawable_button">
+        android:foreground="@drawable/button_effect">
 
         <TextView
             android:layout_width="match_parent"
