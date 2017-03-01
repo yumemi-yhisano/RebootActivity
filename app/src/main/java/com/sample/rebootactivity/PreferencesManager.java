@@ -16,6 +16,8 @@ public class PreferencesManager {
 
     private static final String KEY_MAIN_APP_FINISH_SCHEME = "KEY_MAIN_APP_FINISH_SCHEME";
 
+    private static final String KEY_MAIN_APP_PACKAGE_NAME = "KEY_MAIN_APP_PACKAGE_NAME";
+
     private final SharedPreferences mPreferences;
 
     public PreferencesManager(Context context) {
@@ -48,5 +50,13 @@ public class PreferencesManager {
 
     public String getMainAppFinishScheme() {
         return mPreferences.getString(KEY_MAIN_APP_FINISH_SCHEME, "designpatternapp://finish");
+    }
+
+    public void setMainAppPackageName(String name) {
+        getEditor().putString(KEY_MAIN_APP_PACKAGE_NAME, name).apply();
+    }
+
+    public String getMainAppPackageName() {
+        return mPreferences.getString(KEY_MAIN_APP_PACKAGE_NAME, "com.sample.designpatternapp");
     }
 }
