@@ -14,6 +14,7 @@ import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 
@@ -28,6 +29,7 @@ public class MainControlService extends Service {
     public final static int MSG_WHAT_ID_CONNECTED = 11;
 
     private View mView;
+    private WindowManager.LayoutParams mLayoutParams;
     private Messenger mMessenger;
     private Messenger mReplayMessenger;
     private boolean mConnected;
@@ -46,7 +48,6 @@ public class MainControlService extends Service {
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         registerReceiver(mReceiver, filter);
-
     }
 
     @Override
@@ -71,6 +72,7 @@ public class MainControlService extends Service {
         mConnected = true;
         configureStartButton(! mConnected);
         configureCloseActivityButton(mConnected);
+        configureCloseServiceButton(! mConnected);
 
         return mMessenger.getBinder();
     }
@@ -81,6 +83,7 @@ public class MainControlService extends Service {
         mConnected = true;
         configureStartButton(! mConnected);
         configureCloseActivityButton(mConnected);
+        configureCloseServiceButton(! mConnected);
     }
 
     @Override
@@ -91,26 +94,77 @@ public class MainControlService extends Service {
         mConnected = false;
         configureStartButton(! mConnected);
         configureCloseActivityButton(mConnected);
+        configureCloseServiceButton(! mConnected);
+
         return true;
     }
 
     private void configureView() {
-        Point point = new Point();
-        getWindowManager().getDefaultDisplay().getSize(point);
+//        Point point = new Point();
+//        getWindowManager().getDefaultDisplay().getSize(point);
 
         mView = LayoutInflater.from(this).inflate(R.layout.overlay_view, null);
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+        mLayoutParams = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                point.x - mView.getMeasuredWidth(),
-                point.y - mView.getMeasuredHeight(),
                 WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
                         | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                        | WindowManager.LayoutParams.FLAG_FULLSCREEN
                         | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT);
-        getWindowManager().addView(mView, params);
+        mView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                Log.d(TAG, String.format("onLayoutChange  l:%d, t:%d, r:%d, b:%d", left, top, right, bottom));
+                v.removeOnLayoutChangeListener(this);
+                Point point = new Point();
+                getWindowManager().getDefaultDisplay().getSize(point);
+                mLayoutParams.x = (point.x - (right - left))/ 2;
+                mLayoutParams.y = (point.y - (bottom - top)) / 2;
+                getWindowManager().updateViewLayout(mView, mLayoutParams);
+            }
+        });
+        getWindowManager().addView(mView, mLayoutParams);
+        mView.setOnTouchListener(new View.OnTouchListener() {
+            private float prevX;
+            private float prevY;
+            private boolean mTouching;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        Log.d(TAG, "onTouch ACTION_DOWN");
+                        prevX = event.getRawX();
+                        prevY = event.getRawY();
+                        mTouching = true;
+                        break;
+
+                    case MotionEvent.ACTION_MOVE:
+                        if (! mTouching) {
+                            break;
+                        }
+                        float diffX = prevX - event.getRawX();
+                        float diffY = prevY - event.getRawY();
+                        Log.d(TAG, String.format("onTouch ACTION_MOVE %f, %f", diffX, diffY));
+                        int viewX = (int) (mLayoutParams.x - diffX);
+                        int viewY = (int) (mLayoutParams.y - diffY);
+                        mLayoutParams.x = viewX;
+                        mLayoutParams.y = viewY;
+                        getWindowManager().updateViewLayout(mView, mLayoutParams);
+                        prevX = event.getRawX();
+                        prevY = event.getRawY();
+                        break;
+
+                    case MotionEvent.ACTION_CANCEL:
+                    case MotionEvent.ACTION_UP:
+                        Log.d(TAG, "onTouch ACTION_UP or ACTION_CANCEL");
+                        mTouching = false;
+                        break;
+                }
+                return true;
+            }
+        });
 
         getStartButton().setOnClickListener(new View.OnClickListener() {
             @Override
@@ -138,7 +192,7 @@ public class MainControlService extends Service {
             }
         });
 
-        mView.findViewById(R.id.close_service_button).setOnClickListener(new View.OnClickListener() {
+        getCloseServiceButton().setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "onClick close_service_button");
@@ -163,12 +217,24 @@ public class MainControlService extends Service {
         getCloseActivityButton().setBackgroundColor(enabled ? 0xFFFF0000 : 0xFF454545);
     }
 
+    private void configureCloseServiceButton(boolean enabled) {
+        if (mView == null) {
+            return;
+        }
+        getCloseServiceButton().setEnabled(enabled);
+        getCloseServiceButton().setBackgroundColor(enabled ? 0xFFFF0000 : 0xFF454545);
+    }
+
     private View getStartButton() {
         return mView.findViewById(R.id.start_button);
     }
 
     private View getCloseActivityButton() {
         return mView.findViewById(R.id.close_activity_button);
+    }
+
+    private View getCloseServiceButton() {
+        return mView.findViewById(R.id.close_service_button);
     }
 
     private WindowManager getWindowManager() {
