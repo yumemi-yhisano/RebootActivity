@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
+import static android.R.attr.start;
 import static java.lang.String.format;
 
 public class MainActivity extends AppCompatActivity implements ServiceConnection {

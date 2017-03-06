@@ -9,6 +9,9 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
+import static com.sample.rebootactivity.MainControlService.START_ID;
+import static com.sample.rebootactivity.MainControlService.START_ID_FROM_ACTIVITY;
+
 /**
  * Created by y_hisano on 2017/02/23.
  */
@@ -27,6 +30,7 @@ public class InitActivity extends AppCompatActivity {
     private void startIntentAndFinishActivity() {
         if (canDrawOverlays()) {
             Intent intent = new Intent(this, MainControlService.class);
+            intent.putExtra(START_ID, START_ID_FROM_ACTIVITY);
             startService(intent);
         } else {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,

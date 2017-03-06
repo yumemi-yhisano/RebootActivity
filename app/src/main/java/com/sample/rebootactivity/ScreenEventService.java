@@ -47,7 +47,8 @@ public class ScreenEventService extends IntentService {
 
         if (TextUtils.equals(intent.getAction(), Intent.ACTION_SCREEN_ON)) {
             cancelAllRemainder();
-            registerRemainder(Remainder.AWAKE);
+//            registerRemainder(Remainder.AWAKE);
+            invokeIntent(mPreferencesManager.getMainAppStartScheme());
         }
         else if (TextUtils.equals(intent.getAction(), Intent.ACTION_SCREEN_OFF)) {
             cancelAllRemainder();

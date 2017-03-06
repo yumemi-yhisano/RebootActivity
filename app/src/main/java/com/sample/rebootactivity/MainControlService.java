@@ -10,6 +10,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
@@ -22,6 +23,10 @@ public class MainControlService extends Service {
     public final static String TAG = MainControlService.class.getSimpleName();
     public final static int MSG_WHAT_ID_FINISH_ACTIVITY = 10;
     public final static int MSG_WHAT_ID_CONNECTED = 11;
+
+    public final static String START_ID = "start_id";
+    public final static int START_ID_FROM_ACTIVITY = 100;
+    public final static int START_ID_FROM_RECEIVER = 101;
 
     private Messenger mMessenger;
     private Messenger mReplayMessenger;
@@ -68,7 +73,16 @@ public class MainControlService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand");
+        Log.d(TAG, String.format("onStartCommand %s start_id:%d", intent.toString(), intent.getIntExtra(START_ID, 0)));
+        if (intent.getIntExtra(START_ID, 0) == START_ID_FROM_RECEIVER) {
+            if (TextUtils.equals(intent.getAction(), Intent.ACTION_SCREEN_ON) && ! mConnected) {
+                openMainActivity();
+            }
+            else if (TextUtils.equals(intent.getAction(), Intent.ACTION_SCREEN_OFF) && mConnected) {
+                closeMainActivity();
+            }
+            ScreenEventReceiver.completeWakefulIntent(intent);
+        }
         return START_STICKY;
     }
 
