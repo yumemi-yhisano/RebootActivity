@@ -42,6 +42,8 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate");
+
         View view = LayoutInflater.from(this).inflate(R.layout.activity_main, null);
         setContentView(view);
 
@@ -132,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     private class ReplayCallback implements Handler.Callback {
         @Override
         public boolean handleMessage(Message msg) {
+            Log.d(TAG, String.format("handleMessage %s", msg.toString()));
             if (msg.what == MainControlService.MSG_WHAT_ID_FINISH_ACTIVITY) {
                 MainActivity.this.finish();
             }
