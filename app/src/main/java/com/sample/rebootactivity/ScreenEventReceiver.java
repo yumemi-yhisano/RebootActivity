@@ -16,7 +16,6 @@ public class ScreenEventReceiver extends WakefulBroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-//        ComponentName comp = new ComponentName(context.getPackageName(), ScreenEventService.class.getName());
         ComponentName comp = new ComponentName(context.getPackageName(), MainControlService.class.getName());
         intent.putExtra(START_ID, START_ID_FROM_RECEIVER);
 

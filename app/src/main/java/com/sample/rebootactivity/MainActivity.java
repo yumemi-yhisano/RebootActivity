@@ -17,7 +17,9 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -25,6 +27,8 @@ import java.util.List;
 import java.util.Locale;
 
 import static android.R.attr.start;
+import static com.sample.rebootactivity.MainControlService.START_ID;
+import static com.sample.rebootactivity.MainControlService.START_ID_FROM_ACTIVITY;
 import static java.lang.String.format;
 
 public class MainActivity extends AppCompatActivity implements ServiceConnection {
@@ -36,21 +40,40 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
     private Calendar mCalendar = Calendar.getInstance();
     private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.ENGLISH);
+    private PreferencesManager mPreferencesManager;
 
     private TextView mUsageStatsPermissionView;
     private TextView mUsageStatsView;
+    private TextView mSleepTimeView;
+    private EditText mSleepTimeEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate");
 
+        mPreferencesManager = new PreferencesManager(getApplicationContext());
+
         View view = LayoutInflater.from(this).inflate(R.layout.activity_main, null);
         setContentView(view);
 
         mUsageStatsPermissionView = (TextView) view.findViewById(R.id.usage_stats_permission);
         mUsageStatsView = (TextView) view.findViewById(R.id.usage_stats);
+        mSleepTimeView = (TextView) view.findViewById(R.id.sleep_time);
+        mSleepTimeEditText = (EditText) view.findViewById(R.id.edit_sleep_time);
 
+        view.findViewById(R.id.change_sleep_time_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    long sleepTime = Long.parseLong(mSleepTimeEditText.getText().toString());
+                    mPreferencesManager.setRemainderTimeMillis(sleepTime * 1000);
+                    mSleepTimeView.setText("" + sleepTime);
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
         view.findViewById(R.id.goto_setting_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -62,15 +85,13 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                 }
             }
         });
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
         Intent intent = new Intent(this, MainControlService.class);
+        intent.putExtra(START_ID, START_ID_FROM_ACTIVITY);
+        startService(intent);
+
+        intent = new Intent(this, MainControlService.class);
         bindService(intent, this, BIND_AUTO_CREATE);
-//        intent = new Intent(this, MainControlService.class);
-//        startService(intent);
         mReplayMessenger = new Messenger(new Handler(this.getMainLooper(), new ReplayCallback()));
     }
 
@@ -80,6 +101,14 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         mUsageStatsPermissionView.setText(AppUtil.canGetUsageStats(this) ? "Granted" : "Denied");
 
         configureUsageStatsView();
+        mSleepTimeView.setText("" + mPreferencesManager.getRemainderTimeMillis() / 1000);
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy");
+        unbindService(this);
+        super.onDestroy();
     }
 
     private void configureUsageStatsView() {
@@ -107,12 +136,6 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     }
 
     @Override
-    protected void onStop() {
-        unbindService(this);
-        super.onStop();
-    }
-
-    @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
         Log.d(TAG, "onServiceConnected");
         mMessenger = new Messenger(service);
@@ -136,9 +159,20 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         @Override
         public boolean handleMessage(Message msg) {
             Log.d(TAG, String.format("handleMessage %s", msg.toString()));
-            if (msg.what == MainControlService.MSG_WHAT_ID_FINISH_ACTIVITY) {
-                MainActivity.this.finish();
+            switch (msg.what) {
+                case MainControlService.MSG_WHAT_ID_FINISH_ACTIVITY:
+                    MainActivity.this.finish();
+                    break;
+
+                case MainControlService.MSG_WHAT_ID_SCREEN_ON:
+                    Toast.makeText(getApplicationContext(), "SCREEN ON", Toast.LENGTH_SHORT).show();
+                    break;
+
+                case MainControlService.MSG_WHAT_ID_SCREEN_OFF:
+                    Toast.makeText(getApplicationContext(), "SCREEN OFF", Toast.LENGTH_SHORT).show();
+                    break;
             }
+
             return false;
         }
     }
