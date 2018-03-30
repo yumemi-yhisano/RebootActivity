@@ -3,6 +3,8 @@ package com.sample.rebootactivity;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -22,6 +24,7 @@ public class OverlayView implements ServiceView {
     private final Context mContext;
     private final ClickListener mClickListener;
     private WindowManager.LayoutParams mLayoutParams;
+    private boolean mViewReady;
 
     public OverlayView(Context context, ClickListener clickListener) {
         mContext = context;
@@ -30,6 +33,9 @@ public class OverlayView implements ServiceView {
 
     @Override
     public void onCreate() {
+        if (! checkDrawOverlaysPermission()) {
+            return;
+        }
         configureView();
         configureCloseServiceButton(true);
         configureStartActivityButton(true);
@@ -38,11 +44,17 @@ public class OverlayView implements ServiceView {
 
     @Override
     public void onDestroy() {
-        getWindowManager().removeView(mView);
+        if (mViewReady) {
+            getWindowManager().removeView(mView);
+            mViewReady = false;
+        }
     }
 
     @Override
     public void onBind() {
+        if (! mViewReady) {
+            return;
+        }
         configureCloseServiceButton(false);
         configureStartActivityButton(false);
         configureCloseActivityButton(true);
@@ -50,6 +62,9 @@ public class OverlayView implements ServiceView {
 
     @Override
     public void onUnBind() {
+        if (! mViewReady) {
+            return;
+        }
         configureCloseServiceButton(true);
         configureStartActivityButton(true);
         configureCloseActivityButton(false);
@@ -84,16 +99,23 @@ public class OverlayView implements ServiceView {
     }
 
     private void configureButton(boolean enabled, View button) {
+        if (button == null) {
+            return;
+        }
         button.setEnabled(enabled);
         button.setBackgroundColor(enabled ? 0xFFFF0000 : 0xFF454545);
     }
 
     private void configureView() {
         mView = LayoutInflater.from(mContext).inflate(R.layout.overlay_view, null);
+        int type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        }
         mLayoutParams = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                type,
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
                         | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
@@ -174,6 +196,14 @@ public class OverlayView implements ServiceView {
                 mClickListener.onCloseServiceClick(v);
             }
         });
+        mViewReady = true;
+    }
+
+    private boolean checkDrawOverlaysPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true;
+        }
+        return Settings.canDrawOverlays(mContext);
     }
 
     public interface ClickListener {

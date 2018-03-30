@@ -5,6 +5,8 @@ import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -26,7 +28,6 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
-import static android.R.attr.start;
 import static com.sample.rebootactivity.MainControlService.START_ID;
 import static com.sample.rebootactivity.MainControlService.START_ID_FROM_ACTIVITY;
 import static java.lang.String.format;
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
     private final static String TAG = MainActivity.class.getSimpleName();
 
+    private final static int ACTIVITY_RESULT_DRAW_OVERLAY = 12345;
     private Messenger mMessenger;
     private Messenger mReplayMessenger;
 
@@ -44,6 +46,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
     private TextView mUsageStatsPermissionView;
     private TextView mUsageStatsView;
+    private TextView mDrawOverlaysPermissionView;
     private TextView mSleepTimeView;
     private EditText mSleepTimeEditText;
 
@@ -59,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
         mUsageStatsPermissionView = (TextView) view.findViewById(R.id.usage_stats_permission);
         mUsageStatsView = (TextView) view.findViewById(R.id.usage_stats);
+        mDrawOverlaysPermissionView = view.findViewById(R.id.draw_overlays_permission);
         mSleepTimeView = (TextView) view.findViewById(R.id.sleep_time);
         mSleepTimeEditText = (EditText) view.findViewById(R.id.edit_sleep_time);
 
@@ -74,9 +78,12 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                 }
             }
         });
-        view.findViewById(R.id.goto_setting_button).setOnClickListener(new View.OnClickListener() {
+        view.findViewById(R.id.goto_usage_stats_setting_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                    return;
+                }
                 try {
                     Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
                     startActivity(intent);
@@ -85,7 +92,25 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                 }
             }
         });
+        view.findViewById(R.id.goto_draw_overlays_setting_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                    return;
+                }
+                try {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+                    startActivityForResult(intent, ACTIVITY_RESULT_DRAW_OVERLAY);
+                } catch (ActivityNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
+        startService();
+    }
+
+    private void startService() {
         Intent intent = new Intent(this, MainControlService.class);
         intent.putExtra(START_ID, START_ID_FROM_ACTIVITY);
         startService(intent);
@@ -99,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     protected void onResume() {
         super.onResume();
         mUsageStatsPermissionView.setText(AppUtil.canGetUsageStats(this) ? "Granted" : "Denied");
+        mDrawOverlaysPermissionView.setText(checkDrawOverlaysPermission() ? "Granted" : "Denied");
 
         configureUsageStatsView();
         mSleepTimeView.setText("" + mPreferencesManager.getRemainderTimeMillis() / 1000);
@@ -111,7 +137,28 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         super.onDestroy();
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == ACTIVITY_RESULT_DRAW_OVERLAY) {
+            if (checkDrawOverlaysPermission()) {
+                unbindService(this);
+                stopService(new Intent(this, MainControlService.class));
+
+                mSleepTimeView.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        startService();
+                    }
+                }, 1000);
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
     private void configureUsageStatsView() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            return;
+        }
         String text = "FirstDatetime        LastDatetime         LastDatetimeUsed     Package";
         List<UsageStats> statsList = AppUtil.getUsageStats(this);
         if (statsList != null) {
@@ -128,6 +175,13 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             }
         }
         mUsageStatsView.setText(text);
+    }
+
+    private boolean checkDrawOverlaysPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true;
+        }
+        return Settings.canDrawOverlays(getApplicationContext());
     }
 
     private String getDatetime(long timestamp) {

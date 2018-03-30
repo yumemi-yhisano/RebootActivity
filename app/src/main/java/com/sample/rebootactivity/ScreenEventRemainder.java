@@ -4,6 +4,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.text.TextUtils;
 
 import static android.content.Context.ALARM_SERVICE;
@@ -60,7 +61,11 @@ public class ScreenEventRemainder {
         PendingIntent pIntent = PendingIntent.getBroadcast(mContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
         long trigger = System.currentTimeMillis() + mPreferencesManager.getRemainderTimeMillis();
-        getAlarmManager().set(AlarmManager.RTC_WAKEUP, trigger, pIntent);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            getAlarmManager().setExact(AlarmManager.RTC_WAKEUP, trigger, pIntent);
+        } else {
+            getAlarmManager().set(AlarmManager.RTC_WAKEUP, trigger, pIntent);
+        }
     }
 
     private void cancelAllRemainder() {

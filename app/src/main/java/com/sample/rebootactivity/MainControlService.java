@@ -33,7 +33,7 @@ public class MainControlService extends Service implements OverlayView.ClickList
     private Messenger mReplayMessenger;
     private boolean mConnected;
     private BroadcastReceiver mReceiver = new ScreenEventReceiver();
-//    private ServiceView mServiceView;
+    private ServiceView mServiceView;
     private ScreenEventRemainder mScreenEventRemainder;
 
     @Override
@@ -42,10 +42,10 @@ public class MainControlService extends Service implements OverlayView.ClickList
         Log.d(TAG, "onCreate");
 
         mScreenEventRemainder = new ScreenEventRemainder(getApplicationContext(), new PreferencesManager(getApplicationContext()), this);
-//        mServiceView = new OverlayView(getApplicationContext(), this);
+        mServiceView = new OverlayView(getApplicationContext(), this);
 
         mMessenger = new Messenger(new Handler(this.getMainLooper(), new MessengerCallback()));
-//        mServiceView.onCreate();
+        mServiceView.onCreate();
 
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -55,7 +55,7 @@ public class MainControlService extends Service implements OverlayView.ClickList
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
-//        mServiceView.onDestroy();
+        mServiceView.onDestroy();
         unregisterReceiver(mReceiver);
 
         super.onDestroy();
@@ -81,7 +81,7 @@ public class MainControlService extends Service implements OverlayView.ClickList
     public IBinder onBind(Intent intent) {
         Log.d(TAG, "onBind");
         mConnected = true;
-//        mServiceView.onBind();
+        mServiceView.onBind();
 
         return mMessenger.getBinder();
     }
@@ -90,7 +90,7 @@ public class MainControlService extends Service implements OverlayView.ClickList
     public void onRebind(Intent intent) {
         Log.d(TAG, "onRebind");
         mConnected = true;
-//        mServiceView.onBind();
+        mServiceView.onBind();
     }
 
     @Override
@@ -99,7 +99,7 @@ public class MainControlService extends Service implements OverlayView.ClickList
         mReplayMessenger = null;
 
         mConnected = false;
-//        mServiceView.onUnBind();
+        mServiceView.onUnBind();
 
         return true;
     }
